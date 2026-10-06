@@ -286,24 +286,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function triggerDiscovery() {
         const btn = document.getElementById('btn-trigger-discovery');
-        const origText = btn.innerHTML;
-        btn.innerHTML = 'Scanning Boards...';
-        btn.disabled = true;
+        const origText = btn ? btn.innerHTML : 'Discover Matching Jobs';
+        if (btn) {
+            btn.innerHTML = 'Scanning Boards...';
+            btn.disabled = true;
+        }
 
         try {
             const domain = document.getElementById('prof-domain').value;
             const res = await API.discoverJobs(domain);
-            appendTerminalLog({
-                type: 'success',
-                message: `Discovered and scored ${res.count} jobs across platforms.`
-            });
+
+            if (res.warnings && res.warnings.length > 0) {
+                res.warnings.forEach(warn => {
+                    appendTerminalLog({
+                        type: 'warn',
+                        message: `Discovery feed advisory: ${warn}`
+                    });
+                });
+            }
+
+            if (res.count > 0) {
+                appendTerminalLog({
+                    type: 'success',
+                    message: `Discovered and scored ${res.count} new jobs across platforms (${res.alreadyExisting || 0} already in queue).`
+                });
+            } else if (res.alreadyExisting > 0) {
+                appendTerminalLog({
+                    type: 'info',
+                    message: `Discovery scan complete: All ${res.alreadyExisting} matched jobs are already present in your queue.`
+                });
+            } else {
+                appendTerminalLog({
+                    type: 'info',
+                    message: `No new jobs found matching domain "${domain}". Try updating target domain or skills.`
+                });
+            }
+
             await loadJobs();
             await loadStats();
         } catch (err) {
+            appendTerminalLog({
+                type: 'error',
+                message: `Failed to discover jobs: ${err.message}`
+            });
             alert('Failed to discover jobs: ' + err.message);
         } finally {
-            btn.innerHTML = origText;
-            btn.disabled = false;
+            if (btn) {
+                btn.innerHTML = origText;
+                btn.disabled = false;
+            }
         }
     }
 
@@ -550,20 +581,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Helper to poll platform connection state after launch
+        let platformPollInterval = null;
+        function startPlatformStatusPolling() {
+            if (platformPollInterval) clearInterval(platformPollInterval);
+            let attempts = 0;
+            platformPollInterval = setInterval(async () => {
+                attempts++;
+                await loadPlatformStatuses();
+                if (attempts >= 40) {
+                    clearInterval(platformPollInterval);
+                    platformPollInterval = null;
+                }
+            }, 3000);
+        }
+
         // Platform login helpers
         document.getElementById('btn-login-linkedin').addEventListener('click', async () => {
-            alert('Opening LinkedIn in browser preview. Please log in to your account. Your session cookies will be captured automatically.');
+            alert('Opening LinkedIn in browser preview. Please log in to your account. Your session cookies will be captured automatically once authenticated.');
             await API.launchLogin('linkedin');
+            startPlatformStatusPolling();
         });
 
         document.getElementById('btn-login-naukri').addEventListener('click', async () => {
-            alert('Opening Naukri in browser preview. Please log in to your account. Your session cookies will be captured automatically.');
+            alert('Opening Naukri in browser preview. Please log in to your account. Your session cookies will be captured automatically once authenticated.');
             await API.launchLogin('naukri');
+            startPlatformStatusPolling();
         });
 
         document.getElementById('btn-login-indeed').addEventListener('click', async () => {
-            alert('Opening Indeed in browser preview. Please log in to your account. Your session cookies will be captured automatically.');
+            alert('Opening Indeed in browser preview. Please log in to your account. Your session cookies will be captured automatically once authenticated.');
             await API.launchLogin('indeed');
+            startPlatformStatusPolling();
         });
 
         // Test mock Greenhouse portal button

@@ -10,6 +10,7 @@ class JobDiscoveryService {
         const profile = getProfile();
         const targetDomain = options.domain || profile.domain || 'Full Stack Developer';
         const discovered = [];
+        const warnings = [];
 
         // 1. Fetch RemoteOK
         try {
@@ -17,6 +18,7 @@ class JobDiscoveryService {
             discovered.push(...remoteOkJobs);
         } catch (err) {
             console.warn('[Discovery] RemoteOK fetch warning:', err.message);
+            warnings.push(`RemoteOK: ${err.message}`);
         }
 
         // 2. Fetch Jobicy Feed
@@ -25,15 +27,30 @@ class JobDiscoveryService {
             discovered.push(...jobicyJobs);
         } catch (err) {
             console.warn('[Discovery] Jobicy fetch warning:', err.message);
+            warnings.push(`Jobicy: ${err.message}`);
         }
 
-        // 3. Include Curated Greenhouse & Lever Sample Portal Openings (real company boards)
+        // 3. Include Curated Greenhouse, Lever, LinkedIn, Naukri, & Indeed Openings
         const sampleBoards = this.getCuratedBoardJobs(targetDomain);
         discovered.push(...sampleBoards);
 
+        // Deduplicate jobs by URL within the batch
+        const uniqueDiscovered = [];
+        const seenUrls = new Set();
+        for (const j of discovered) {
+            const normalizedUrl = (j.url || '').trim().toLowerCase();
+            if (normalizedUrl && !seenUrls.has(normalizedUrl)) {
+                seenUrls.add(normalizedUrl);
+                uniqueDiscovered.push(j);
+            }
+        }
+
         // Score and persist each discovered job
         const results = [];
-        for (const job of discovered) {
+        let newJobsCount = 0;
+        let existingJobsCount = 0;
+
+        for (const job of uniqueDiscovered) {
             const match = evaluateJobMatch(profile, job);
             const enrichedJob = {
                 ...job,
@@ -45,9 +62,19 @@ class JobDiscoveryService {
                 status: match.eligible ? 'queued' : 'discovered'
             };
 
-            saveJob(enrichedJob);
+            const saveResult = saveJob(enrichedJob);
+            if (saveResult && saveResult.isNew) {
+                newJobsCount++;
+            } else {
+                existingJobsCount++;
+            }
             results.push(enrichedJob);
         }
+
+        results.warnings = warnings;
+        results.newCount = newJobsCount;
+        results.existingCount = existingJobsCount;
+        results.totalScanned = results.length;
 
         return results;
     }
@@ -58,7 +85,9 @@ class JobDiscoveryService {
                 headers: { 'User-Agent': 'ApplyPilotAI/1.0' },
                 timeout: 8000
             });
-            if (!Array.isArray(res.data)) return [];
+            if (!Array.isArray(res.data)) {
+                throw new Error('Invalid feed structure returned');
+            }
 
             const kwLower = keyword.toLowerCase();
             return res.data
@@ -79,8 +108,8 @@ class JobDiscoveryService {
                     salary: item.salary || '$90,000 - $140,000',
                     job_type: 'Full-time'
                 }));
-        } catch (e) {
-            return [];
+        } catch (err) {
+            throw new Error(`RemoteOK unreachable (${err.message})`);
         }
     }
 
@@ -89,7 +118,10 @@ class JobDiscoveryService {
             const res = await axios.get('https://jobicy.com/api/v2/remote-jobs?count=15&industry=engineering', {
                 timeout: 8000
             });
-            const jobs = res.data?.jobs || [];
+            const jobs = res.data?.jobs;
+            if (!Array.isArray(jobs)) {
+                throw new Error('Invalid feed structure returned');
+            }
             return jobs.map(j => ({
                 id: 'jby_' + (j.id || Math.random().toString(36).substring(7)),
                 title: j.jobTitle || 'Full Stack Engineer',
@@ -101,8 +133,8 @@ class JobDiscoveryService {
                 salary: j.annualSalaryMin ? `$${j.annualSalaryMin} - $${j.annualSalaryMax}` : 'Market Competitive',
                 job_type: j.jobType || 'Full-time'
             }));
-        } catch (e) {
-            return [];
+        } catch (err) {
+            throw new Error(`Jobicy unreachable (${err.message})`);
         }
     }
 

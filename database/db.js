@@ -107,6 +107,8 @@ function updateProfile(data) {
 }
 
 function saveJob(job) {
+    const existing = db.prepare('SELECT id, status FROM jobs WHERE url = ?').get(String(job.url || ''));
+
     const stmt = db.prepare(`
         INSERT INTO jobs (
             id, title, company, location, url, platform, domain,
@@ -123,7 +125,7 @@ function saveJob(job) {
             status = CASE WHEN jobs.status = 'applied' THEN 'applied' ELSE excluded.status END
     `);
 
-    return stmt.run({
+    const result = stmt.run({
         id: String(job.id || ''),
         title: String(job.title || ''),
         company: String(job.company || ''),
@@ -141,6 +143,11 @@ function saveJob(job) {
         match_reasons: typeof job.match_reasons === 'string' ? job.match_reasons : JSON.stringify(job.match_reasons || []),
         status: String(job.status || 'discovered')
     });
+
+    return {
+        isNew: !existing,
+        ...result
+    };
 }
 
 function getJobs(filter = {}) {

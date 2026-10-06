@@ -26,6 +26,8 @@ test_proof_*.png
 
 # User uploads (resumes & documents)
 uploads/
+uploads/resumes/
+uploads/**
 
 # Generated reports
 reports/

@@ -109,7 +109,14 @@ app.post('/api/jobs/discover', async (req, res) => {
     try {
         const { domain } = req.body;
         const jobs = await jobDiscoveryService.discoverJobs({ domain });
-        res.json({ success: true, count: jobs.length, jobs });
+        res.json({
+            success: true,
+            count: jobs.newCount !== undefined ? jobs.newCount : jobs.length,
+            totalScanned: jobs.totalScanned || jobs.length,
+            alreadyExisting: jobs.existingCount || 0,
+            warnings: jobs.warnings || [],
+            jobs
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -276,22 +283,52 @@ app.post('/api/sessions/launch-login', async (req, res) => {
         await page.goto(loginUrl);
         agentWorker.log('info', `Opened ${platform.toUpperCase()} authentication window. Log in and your session cookies will be saved.`);
 
-        // Save cookies when user closes the window or after 45s timer
-        page.on('close', async () => {
+        // Active verification loop: poll for valid authentication without blind timeout
+        let isSaved = false;
+        const startTime = Date.now();
+        const maxWaitMs = 120000; // 2 minutes
+
+        const intervalId = setInterval(async () => {
+            if (isSaved) {
+                clearInterval(intervalId);
+                return;
+            }
+
+            if (!browser.isConnected() || page.isClosed()) {
+                clearInterval(intervalId);
+                return;
+            }
+
             try {
-                await browserManager.saveSessionState(platform);
-                saveSession(platform, 'saved');
-                agentWorker.log('success', `✓ Saved authenticated session for ${platform.toUpperCase()} on browser close.`);
+                const isLoggedIn = await browserManager.verifyPlatformLogin(context, page, platform);
+                if (isLoggedIn) {
+                    isSaved = true;
+                    clearInterval(intervalId);
+                    await browserManager.saveSessionState(platform);
+                    saveSession(platform, 'connected');
+                    agentWorker.log('success', `✓ Verified live authentication for ${platform.toUpperCase()}! Cookies stored securely.`);
+                } else if (Date.now() - startTime > maxWaitMs) {
+                    clearInterval(intervalId);
+                    agentWorker.log('warn', `Login window timed out after 2 minutes for ${platform.toUpperCase()} without detected login. Click 'Save Session' if already signed in.`);
+                }
+            } catch (e) {}
+        }, 2500);
+
+        // Also check authentication state on window close
+        page.on('close', async () => {
+            if (isSaved) return;
+            clearInterval(intervalId);
+            try {
+                const isLoggedIn = await browserManager.verifyPlatformLogin(context, null, platform);
+                if (isLoggedIn) {
+                    await browserManager.saveSessionState(platform);
+                    saveSession(platform, 'connected');
+                    agentWorker.log('success', `✓ Verified and saved session for ${platform.toUpperCase()} on window close.`);
+                } else {
+                    agentWorker.log('info', `Authentication window closed for ${platform.toUpperCase()}.`);
+                }
             } catch (e) {}
         });
-
-        setTimeout(async () => {
-            try {
-                await browserManager.saveSessionState(platform);
-                saveSession(platform, 'saved');
-                agentWorker.log('success', `✓ Saved authenticated session for ${platform.toUpperCase()}`);
-            } catch (e) {}
-        }, 45000);
 
         res.json({ success: true, message: `Browser launched for ${platform}. Sign in and cookies will persist.` });
     } catch (err) {
