@@ -526,11 +526,11 @@
     </main>
 
     <!-- Modal: Proof Screenshot & Details -->
-    <div class="modal-backdrop" id="proof-modal" hidden>
+    <div class="modal-backdrop" id="proof-modal" style="display: none;" hidden>
         <div class="modal-dialog">
             <div class="modal-header">
                 <h3 id="modal-proof-title">Application Proof & Submission Record</h3>
-                <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+                <button type="button" class="modal-close-btn" id="btn-close-modal" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="modal-meta-grid" id="modal-proof-meta"></div>
@@ -547,11 +547,11 @@
     </div>
 
     <!-- Modal: Import Custom URL -->
-    <div class="modal-backdrop" id="import-modal" hidden>
+    <div class="modal-backdrop" id="import-modal" style="display: none;" hidden>
         <div class="modal-dialog modal-dialog-sm">
             <div class="modal-header">
                 <h3>Import Custom Job Posting</h3>
-                <button class="modal-close-btn" id="btn-close-import-modal">&times;</button>
+                <button type="button" class="modal-close-btn" id="btn-close-import-modal" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="import-form">
@@ -578,7 +578,10 @@
                             <option value="generic">Other / Direct Portal</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-block mt-16">Add to Application Queue</button>
+                    <div style="display: flex; gap: 12px; margin-top: 18px;">
+                        <button type="button" class="btn btn-outline" id="btn-cancel-import-modal" style="flex: 1;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex: 2;">Add to Application Queue</button>
+                    </div>
                 </form>
             </div>
         </div>

@@ -400,6 +400,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.removeAttribute('hidden');
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+
+    function closeModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.setAttribute('hidden', '');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+
     function openProofModal(app) {
         const modal = document.getElementById('proof-modal');
         document.getElementById('modal-proof-title').textContent = `${app.company} — ${app.title}`;
@@ -422,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('modal-answers-json').textContent = JSON.stringify(app.answers_log, null, 2);
-        modal.hidden = false;
+        openModal('proof-modal');
     }
 
     // ==========================================
@@ -628,36 +644,80 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('nav-dashboard').click();
         });
 
+        // Ensure all modals start closed on initialization
+        closeModal('proof-modal');
+        closeModal('import-modal');
+
         // Modal triggers
-        document.getElementById('btn-close-modal').addEventListener('click', () => {
-            document.getElementById('proof-modal').hidden = true;
+        document.getElementById('btn-close-modal')?.addEventListener('click', () => {
+            closeModal('proof-modal');
         });
 
-        document.getElementById('btn-open-import-modal').addEventListener('click', () => {
-            document.getElementById('import-modal').hidden = false;
+        document.getElementById('btn-open-import-modal')?.addEventListener('click', () => {
+            document.getElementById('import-form')?.reset();
+            openModal('import-modal');
         });
-        document.getElementById('btn-close-import-modal').addEventListener('click', () => {
-            document.getElementById('import-modal').hidden = true;
+
+        document.getElementById('btn-close-import-modal')?.addEventListener('click', () => {
+            closeModal('import-modal');
+        });
+
+        document.getElementById('btn-cancel-import-modal')?.addEventListener('click', () => {
+            closeModal('import-modal');
+        });
+
+        // Close on clicking modal backdrop (outside dialog)
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.addEventListener('click', (e) => {
+                if (e.target === backdrop) {
+                    closeModal(backdrop.id);
+                }
+            });
+        });
+
+        // Close on pressing Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal('proof-modal');
+                closeModal('import-modal');
+            }
         });
 
         // Custom Job Import Form
-        document.getElementById('import-form').addEventListener('submit', async (e) => {
+        document.getElementById('import-form')?.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const origText = submitBtn ? submitBtn.textContent : 'Add to Application Queue';
+            if (submitBtn) {
+                submitBtn.textContent = 'Importing...';
+                submitBtn.disabled = true;
+            }
+
             const jobData = {
-                company: document.getElementById('imp-company').value,
-                title: document.getElementById('imp-title').value,
-                url: document.getElementById('imp-url').value,
+                company: document.getElementById('imp-company').value.trim(),
+                title: document.getElementById('imp-title').value.trim(),
+                url: document.getElementById('imp-url').value.trim(),
                 platform: document.getElementById('imp-platform').value
             };
 
             try {
                 await API.importJob(jobData);
-                document.getElementById('import-modal').hidden = true;
+                closeModal('import-modal');
+                document.getElementById('import-form').reset();
+                appendTerminalLog({
+                    type: 'success',
+                    message: `Imported custom posting: ${jobData.company} — ${jobData.title}`
+                });
                 alert('✓ Job imported into application queue!');
-                loadJobs();
-                loadStats();
+                await loadJobs();
+                await loadStats();
             } catch (err) {
                 alert('Failed to import job: ' + err.message);
+            } finally {
+                if (submitBtn) {
+                    submitBtn.textContent = origText;
+                    submitBtn.disabled = false;
+                }
             }
         });
 
