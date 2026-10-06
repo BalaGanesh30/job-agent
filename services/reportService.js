@@ -172,6 +172,10 @@ class ReportService {
      */
     saveReportSnapshot(period = 'daily') {
         const stats = getStats();
+        const apps = getApplications({});
+        const avgScore = apps.length > 0
+            ? Math.round(apps.reduce((sum, a) => sum + (a.match_score || 0), 0) / apps.length)
+            : 0;
         const id = 'rep_' + Date.now();
         const html = this.generateHTMLSummary(period);
 
@@ -184,11 +188,11 @@ class ReportService {
             stats.totalDiscovered,
             stats.totalApplied,
             stats.totalFailed,
-            82.5,
-            JSON.stringify({ stats, timestamp: new Date().toISOString() })
+            avgScore,
+            JSON.stringify({ stats, avgScore, timestamp: new Date().toISOString() })
         );
 
-        return { id, stats };
+        return { id, stats, avgScore };
     }
 }
 

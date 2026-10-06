@@ -24,6 +24,14 @@ proof_*.png
 indeed_proof_*.png
 test_proof_*.png
 
+# User uploads (resumes & documents)
+uploads/
+
+# Generated reports
+reports/
+reports/*.csv
+reports/*.html
+
 # Logs
 logs/
 *.log

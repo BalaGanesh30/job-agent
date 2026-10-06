@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -275,7 +276,15 @@ app.post('/api/sessions/launch-login', async (req, res) => {
         await page.goto(loginUrl);
         agentWorker.log('info', `Opened ${platform.toUpperCase()} authentication window. Log in and your session cookies will be saved.`);
 
-        // Wait in background until logged in
+        // Save cookies when user closes the window or after 45s timer
+        page.on('close', async () => {
+            try {
+                await browserManager.saveSessionState(platform);
+                saveSession(platform, 'saved');
+                agentWorker.log('success', `✓ Saved authenticated session for ${platform.toUpperCase()} on browser close.`);
+            } catch (e) {}
+        });
+
         setTimeout(async () => {
             try {
                 await browserManager.saveSessionState(platform);
@@ -285,6 +294,19 @@ app.post('/api/sessions/launch-login', async (req, res) => {
         }, 45000);
 
         res.json({ success: true, message: `Browser launched for ${platform}. Sign in and cookies will persist.` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/sessions/save', async (req, res) => {
+    const { platform } = req.body;
+    if (!platform) return res.status(400).json({ error: 'Platform name required' });
+    try {
+        await browserManager.saveSessionState(platform);
+        saveSession(platform, 'saved');
+        agentWorker.log('success', `✓ Saved session for ${platform.toUpperCase()}`);
+        res.json({ success: true, message: `Session saved for ${platform}` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -369,6 +391,30 @@ app.post('/mock/submit-success', (req, res) => {
 </html>
     `);
 });
+
+// Health Check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+        version: require('./package.json').version || '1.0.0'
+    });
+});
+
+// Graceful Shutdown
+function gracefulShutdown(signal) {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    agentWorker.stop();
+    browserManager.closeBrowser().then(() => {
+        console.log('Browser cleaned up. Exiting.');
+        process.exit(0);
+    }).catch(() => {
+        process.exit(1);
+    });
+}
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Start Server
 app.listen(PORT, () => {

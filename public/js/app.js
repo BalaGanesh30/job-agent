@@ -45,24 +45,32 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function initSSE() {
         const terminal = document.getElementById('terminal-logs');
-        const evtSource = new EventSource('/api/agent/stream');
+        let retryMs = 1000;
 
-        evtSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'log') {
-                    appendTerminalLog(data.payload);
-                } else if (data.type === 'state') {
-                    updateAgentStateUI(data.payload);
+        function connect() {
+            const evtSource = new EventSource('/api/agent/stream');
+
+            evtSource.onmessage = (event) => {
+                retryMs = 1000; // reset on successful message
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'log') {
+                        appendTerminalLog(data.payload);
+                    } else if (data.type === 'state') {
+                        updateAgentStateUI(data.payload);
+                    }
+                } catch (err) {
+                    console.warn('SSE parse error:', err);
                 }
-            } catch (err) {
-                console.warn('SSE parse error:', err);
-            }
-        };
+            };
 
-        evtSource.onerror = () => {
-            // Reconnection handled automatically by EventSource
-        };
+            evtSource.onerror = () => {
+                evtSource.close();
+                retryMs = Math.min(retryMs * 2, 30000);
+                setTimeout(connect, retryMs);
+            };
+        }
+        connect();
     }
 
     function appendTerminalLog(log) {
@@ -313,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            tbody.innerHTML = apps.map(app => {
+            tbody.innerHTML = apps.map((app, index) => {
                 const statusBadge = app.status === 'applied' 
                     ? '<span class="badge badge-success">APPLIED</span>' 
                     : app.status === 'review_needed' 
@@ -329,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${statusBadge}</td>
                         <td style="font-size: 0.78rem; color: #94a3b8;">${new Date(app.applied_at).toLocaleString()}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline btn-view-proof" data-app='${JSON.stringify(app)}'>
+                            <button class="btn btn-sm btn-outline btn-view-proof" data-app-idx="${index}">
                                 View Proof
                             </button>
                         </td>
@@ -337,11 +345,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
-            // Bind proof buttons
+            // Bind proof buttons - use index reference instead of inline JSON
             tbody.querySelectorAll('.btn-view-proof').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    const appData = JSON.parse(btn.getAttribute('data-app'));
-                    openProofModal(appData);
+                    const idx = parseInt(btn.getAttribute('data-app-idx'));
+                    openProofModal(apps[idx]);
                 });
             });
 
@@ -350,6 +358,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const successCount = apps.filter(a => a.status === 'applied').length;
             const rate = apps.length > 0 ? Math.round((successCount / apps.length) * 100) : 100;
             document.getElementById('rep-rate').textContent = `${rate}%`;
+
+            // Calculate actual average match score
+            const avgScore = apps.length > 0 
+                ? Math.round(apps.reduce((sum, a) => sum + (a.match_score || 0), 0) / apps.length)
+                : 0;
+            document.getElementById('rep-avg-score').textContent = `${avgScore}%`;
         } catch (err) {
             console.error('Failed to load applications:', err);
         }

@@ -109,6 +109,15 @@ const API = {
             body: JSON.stringify({ platform })
         });
         return res.json();
+    },
+
+    async savePlatformSession(platform) {
+        const res = await fetch('/api/sessions/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ platform })
+        });
+        return res.json();
     }
 };
 
