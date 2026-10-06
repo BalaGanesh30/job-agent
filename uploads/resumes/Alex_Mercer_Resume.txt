@@ -1,0 +1,26 @@
+Alex Mercer
+Senior Full Stack Engineer
+alex.mercer.dev@example.com | +1 (555) 234-5678 | Bengaluru, India / Remote
+LinkedIn: https://linkedin.com/in/alex-mercer | GitHub: https://github.com/alex-mercer | Portfolio: https://alexmercer.dev
+
+PROFESSIONAL SUMMARY
+Results-driven Full Stack Engineer with 3.5+ years of experience designing and shipping scalable microservices, REST/GraphQL APIs, and reactive single-page applications. Proven track record in TypeScript, Node.js, React, and cloud architectures.
+
+TECHNICAL SKILLS
+- Languages: JavaScript (ES6+), TypeScript, Python, SQL, HTML5, CSS3
+- Frontend: React.js, Next.js, Redux, TailwindCSS, Webpack, Responsive Design
+- Backend & Cloud: Node.js, Express, PostgreSQL, MongoDB, Redis, Docker, AWS (S3, Lambda, EC2), REST APIs
+- Tools & Practices: Git, GitHub Actions, Playwright, Jest, CI/CD, Agile, Microservices
+
+WORK EXPERIENCE
+Senior Software Engineer | CloudScale Systems | 2022 – Present
+- Architected and deployed microservices serving 200,000+ daily active users using Node.js, TypeScript, and Redis.
+- Implemented responsive frontend dashboards using React and TailwindCSS, reducing load times by 40%.
+- Streamlined CI/CD delivery pipelines with Docker and GitHub Actions.
+
+Software Engineer | DevMatrix Labs | 2020 – 2022
+- Developed scalable backend services and database schemas with Node.js and PostgreSQL.
+- Collaborated across teams to integrate third-party APIs and payment processors.
+
+EDUCATION
+B.S. in Computer Science & Engineering | 2016 – 2020

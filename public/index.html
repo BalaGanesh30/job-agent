@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApplyPilot AI — Autonomous Job Application Agent</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+        <div class="logo-container">
+            <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+                    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+                    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+                    <path d="M12 9V4s3.03.55 4 2c1.08 1.62 0 5 0 5"/>
+                </svg>
+            </div>
+            <div class="logo-text">
+                <h1>ApplyPilot <span>AI</span></h1>
+                <p>Autonomous Job Application Agent</p>
+            </div>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="tab-dashboard" id="nav-dashboard">
+                <span class="tab-icon">⚡</span> Monitor & Live
+            </button>
+            <button class="nav-tab" data-tab="tab-profile" id="nav-profile">
+                <span class="tab-icon">👤</span> Profile & Resume
+            </button>
+            <button class="nav-tab" data-tab="tab-jobs" id="nav-jobs">
+                <span class="tab-icon">🎯</span> Job Discovery
+            </button>
+            <button class="nav-tab" data-tab="tab-applications" id="nav-applications">
+                <span class="tab-icon">📋</span> Applications
+            </button>
+            <button class="nav-tab" data-tab="tab-reports" id="nav-reports">
+                <span class="tab-icon">📊</span> Reports & Alerts
+            </button>
+            <button class="nav-tab" data-tab="tab-platforms" id="nav-platforms">
+                <span class="tab-icon">🔗</span> Platforms
+            </button>
+        </nav>
+
+        <div class="header-actions">
+            <div class="agent-beacon-pill" id="agent-status-pill">
+                <span class="beacon-dot"></span>
+                <span class="beacon-label" id="agent-status-text">AGENT IDLE</span>
+            </div>
+            <div class="quick-toggle-wrap" title="Toggle visible browser window vs silent background execution">
+                <label class="switch-label">
+                    <span>Headed Preview</span>
+                    <input type="checkbox" id="headed-toggle">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Application Container -->
+    <main class="app-main">
+
+        <!-- TAB 1: DASHBOARD & LIVE AGENT RUNNER -->
+        <section id="tab-dashboard" class="tab-pane active">
+            <!-- Metric Stats Row -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon icon-blue">🌐</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Discovered Jobs</span>
+                        <h3 class="stat-value" id="stat-discovered">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon icon-green">🚀</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Successfully Applied</span>
+                        <h3 class="stat-value" id="stat-applied">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon icon-purple">🎯</div>
+                    <div class="stat-info">
+                        <span class="stat-label">High Match (&gt;80%)</span>
+                        <h3 class="stat-value" id="stat-high-match">0</h3>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon icon-amber">⏳</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Queued in Buffer</span>
+                        <h3 class="stat-value" id="stat-queued">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Agent Control Panel -->
+            <div class="control-panel card-glass">
+                <div class="panel-header">
+                    <div>
+                        <h2>Autonomous Execution Command</h2>
+                        <p>Launch or control Playwright browser engine applying to verified matching jobs.</p>
+                    </div>
+                    <div class="control-settings-inline">
+                        <div class="inline-control">
+                            <label for="batch-limit-input">Batch Limit:</label>
+                            <input type="number" id="batch-limit-input" value="10" min="1" max="50">
+                        </div>
+                        <div class="inline-control">
+                            <label for="execution-mode-select">Execution Mode:</label>
+                            <select id="execution-mode-select">
+                                <option value="full_auto">Full Autonomous (Apply & Submit)</option>
+                                <option value="review_first">Safety Review (Prefill & Wait for OK)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button class="btn btn-primary btn-glow" id="btn-start-run">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Start Autonomous Run
+                    </button>
+                    <button class="btn btn-secondary" id="btn-pause-run" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        Pause
+                    </button>
+                    <button class="btn btn-secondary" id="btn-resume-run" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Resume
+                    </button>
+                    <button class="btn btn-danger" id="btn-stop-run" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16"/></svg>
+                        Stop Agent
+                    </button>
+                    <button class="btn btn-outline" id="btn-quick-discover">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        Fetch New Jobs
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Target & Terminal Live Logs Grid -->
+            <div class="runner-grid">
+                <!-- Current Job Card -->
+                <div class="active-target-card card-glass">
+                    <div class="card-title-bar">
+                        <h3>Active Target Job</h3>
+                        <span class="badge badge-platform" id="current-platform-badge">IDLE</span>
+                    </div>
+                    <div id="active-job-details" class="active-job-empty">
+                        <div class="empty-animation-ring"></div>
+                        <p>No job currently active. Press <strong>Start Autonomous Run</strong> to begin processing the application queue.</p>
+                    </div>
+                </div>
+
+                <!-- Live Stream Console -->
+                <div class="terminal-card card-glass">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot dot-red"></span>
+                            <span class="dot dot-yellow"></span>
+                            <span class="dot dot-green"></span>
+                        </div>
+                        <span class="terminal-title">ApplyPilot Agent Live Stream (SSE)</span>
+                        <button class="btn-terminal-clear" id="btn-clear-logs">Clear</button>
+                    </div>
+                    <div class="terminal-body" id="terminal-logs">
+                        <div class="log-entry log-info">
+                            <span class="log-time">[System]</span>
+                            <span class="log-text">ApplyPilot AI orchestrator ready. Monitoring initialized.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PROFILE & RESUME INTELLIGENCE -->
+        <section id="tab-profile" class="tab-pane">
+            <div class="pane-grid-2">
+                <!-- Resume Upload & AI Parser Card -->
+                <div class="card-glass">
+                    <div class="card-title-bar">
+                        <h3>Resume Document & AI Extraction</h3>
+                        <span class="badge badge-ai">Smart Parser</span>
+                    </div>
+                    <p class="section-desc">Upload your PDF or TXT resume. The agent parses your domain, skills, and experience automatically.</p>
+
+                    <div class="upload-dropzone" id="resume-dropzone">
+                        <input type="file" id="resume-file-input" accept=".pdf,.txt,.docx" hidden>
+                        <div class="dropzone-content">
+                            <div class="dropzone-icon">📄</div>
+                            <h4>Drag & Drop your Resume (PDF)</h4>
+                            <p>or click here to browse files</p>
+                            <span class="file-status-text" id="uploaded-filename">No resume uploaded yet</span>
+                        </div>
+                    </div>
+
+                    <div class="resume-preview-box">
+                        <label>Extracted Resume Summary:</label>
+                        <textarea id="profile-summary" rows="5" placeholder="Resume summary or profile highlights..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Structured Candidate Information -->
+                <div class="card-glass">
+                    <div class="card-title-bar">
+                        <h3>Candidate Credentials</h3>
+                        <button class="btn btn-sm btn-primary" id="btn-save-profile">Save Changes</button>
+                    </div>
+
+                    <form id="profile-form" class="form-grid">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="prof-name" placeholder="John Doe" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" id="prof-email" placeholder="john@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number *</label>
+                            <input type="tel" id="prof-phone" placeholder="+1 (555) 012-3456" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Location / City *</label>
+                            <input type="text" id="prof-location" placeholder="Remote / Bengaluru / San Francisco">
+                        </div>
+                        <div class="form-group">
+                            <label>Target Domain *</label>
+                            <select id="prof-domain">
+                                <option value="Full Stack Developer">Full Stack Developer</option>
+                                <option value="Frontend Developer">Frontend Developer</option>
+                                <option value="Backend Developer">Backend Developer</option>
+                                <option value="DevOps / Cloud Engineer">DevOps / Cloud Engineer</option>
+                                <option value="Data Scientist / AI Engineer">Data Scientist / AI Engineer</option>
+                                <option value="QA / Automation Engineer">QA / Automation Engineer</option>
+                                <option value="Mobile Developer">Mobile Developer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Years of Experience *</label>
+                            <input type="number" id="prof-exp" step="0.5" min="0" max="30" value="3.5">
+                        </div>
+                        <div class="form-group">
+                            <label>LinkedIn Profile URL</label>
+                            <input type="url" id="prof-linkedin" placeholder="https://linkedin.com/in/username">
+                        </div>
+                        <div class="form-group">
+                            <label>GitHub Profile URL</label>
+                            <input type="url" id="prof-github" placeholder="https://github.com/username">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Portfolio / Personal Website</label>
+                            <input type="url" id="prof-portfolio" placeholder="https://myportfolio.com">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Technical Skills (Comma separated or add tags)</label>
+                            <input type="text" id="prof-skills-input" placeholder="JavaScript, React, Node.js, TypeScript, SQL...">
+                            <div class="skills-tag-cloud" id="skills-tag-cloud"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Min Match Score Threshold (%)</label>
+                            <input type="number" id="prof-threshold" min="30" max="100" value="75">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Standard Screening Answers Config -->
+            <div class="card-glass mt-20">
+                <div class="card-title-bar">
+                    <h3>Standard Portal Screening Answers</h3>
+                    <span class="badge badge-neutral">Auto-populated in forms</span>
+                </div>
+                <div class="screening-grid">
+                    <div class="screening-item">
+                        <label>Legally Authorized to Work?</label>
+                        <select id="screen-authorized">
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </div>
+                    <div class="screening-item">
+                        <label>Requires Visa Sponsorship?</label>
+                        <select id="screen-sponsorship">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="screening-item">
+                        <label>Notice Period / Availability</label>
+                        <input type="text" id="screen-notice" value="Immediate / 15 Days">
+                    </div>
+                    <div class="screening-item">
+                        <label>Expected Compensation / CTC</label>
+                        <input type="text" id="screen-salary" value="Flexible / Competitive Market Rate">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: JOB DISCOVERY & QUEUE -->
+        <section id="tab-jobs" class="tab-pane">
+            <div class="action-bar card-glass">
+                <div class="search-filters">
+                    <input type="text" id="filter-job-keyword" placeholder="Search by role or company..." class="input-search">
+                    <select id="filter-platform">
+                        <option value="">All Platforms</option>
+                        <option value="linkedin">LinkedIn</option>
+                        <option value="naukri">Naukri</option>
+                        <option value="indeed">Indeed</option>
+                        <option value="greenhouse">Greenhouse</option>
+                        <option value="lever">Lever</option>
+                        <option value="remote">RemoteOK / Jobicy</option>
+                    </select>
+                    <select id="filter-score">
+                        <option value="0">All Match Scores</option>
+                        <option value="70">&ge; 70% Match</option>
+                        <option value="80">&ge; 80% Match</option>
+                        <option value="90">&ge; 90% Match</option>
+                    </select>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="btn-trigger-discovery">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                        Discover Matching Jobs
+                    </button>
+                    <button class="btn btn-outline" id="btn-open-import-modal">+ Import Custom URL</button>
+                </div>
+            </div>
+
+            <!-- Jobs Listing Grid -->
+            <div class="jobs-list" id="jobs-container">
+                <!-- Dynamically injected job cards -->
+            </div>
+        </section>
+
+        <!-- TAB 4: APPLICATIONS HISTORY & PROOF -->
+        <section id="tab-applications" class="tab-pane">
+            <div class="card-glass">
+                <div class="card-title-bar">
+                    <div>
+                        <h2>Application Audit History</h2>
+                        <p>Complete historical log of applied jobs with verification screenshots and answers submitted.</p>
+                    </div>
+                    <div class="history-controls">
+                        <select id="history-filter-status">
+                            <option value="">All Statuses</option>
+                            <option value="applied">Applied (Success)</option>
+                            <option value="review_needed">Review Needed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <a href="/api/reports/csv" class="btn btn-sm btn-outline" download>Download CSV</a>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="data-table" id="applications-table">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Job Role</th>
+                                <th>Platform</th>
+                                <th>Match Score</th>
+                                <th>Status</th>
+                                <th>Date & Time</th>
+                                <th>Proof / Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applications-table-body">
+                            <!-- Injected application rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: REPORTS & NOTIFICATIONS -->
+        <section id="tab-reports" class="tab-pane">
+            <div class="pane-grid-2">
+                <!-- Summary Card -->
+                <div class="card-glass">
+                    <div class="card-title-bar">
+                        <h3>Application Performance Digest</h3>
+                        <a href="/api/reports/html" target="_blank" class="btn btn-sm btn-outline">View Printable Report &rarr;</a>
+                    </div>
+                    <div class="report-stats-grid">
+                        <div class="report-stat-box">
+                            <span class="report-stat-title">Total Processed</span>
+                            <span class="report-stat-num" id="rep-total">0</span>
+                        </div>
+                        <div class="report-stat-box">
+                            <span class="report-stat-title">Success Rate</span>
+                            <span class="report-stat-num text-success" id="rep-rate">100%</span>
+                        </div>
+                        <div class="report-stat-box">
+                            <span class="report-stat-title">Avg Match Score</span>
+                            <span class="report-stat-num text-info" id="rep-avg-score">85%</span>
+                        </div>
+                    </div>
+                    <div class="export-actions">
+                        <h4>Export Future Logs & Records</h4>
+                        <div class="export-btn-group">
+                            <a href="/api/reports/csv" class="btn btn-secondary" download>📥 Download CSV Spreadsheet</a>
+                            <a href="/api/reports/html" target="_blank" class="btn btn-secondary">📄 Open HTML Summary</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Delivery & Alerts Config -->
+                <div class="card-glass">
+                    <div class="card-title-bar">
+                        <h3>Automated Email Alerts</h3>
+                        <span class="badge badge-purple">Nodemailer SMTP</span>
+                    </div>
+                    <p class="section-desc">Receive periodic summary digests of applied jobs in your inbox.</p>
+
+                    <form id="email-config-form" class="form-grid">
+                        <div class="form-group full-width">
+                            <label>Recipient Email Address *</label>
+                            <input type="email" id="email-recipient" placeholder="youremail@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Host</label>
+                            <input type="text" id="email-smtp-host" value="smtp.gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP Port</label>
+                            <input type="number" id="email-smtp-port" value="587">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP User / Email</label>
+                            <input type="text" id="email-smtp-user" placeholder="sender@gmail.com">
+                        </div>
+                        <div class="form-group">
+                            <label>SMTP App Password</label>
+                            <input type="password" id="email-smtp-pass" placeholder="••••••••••••••••">
+                        </div>
+                        <div class="form-group full-width">
+                            <button type="button" class="btn btn-primary" id="btn-send-test-report">Send Test Report Email</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 6: PLATFORM CONNECTORS -->
+        <section id="tab-platforms" class="tab-pane">
+            <div class="platforms-grid">
+                <!-- LinkedIn Connector -->
+                <div class="platform-card card-glass">
+                    <div class="platform-header">
+                        <div class="platform-badge-logo linkedin-bg">in</div>
+                        <div>
+                            <h3>LinkedIn Easy Apply</h3>
+                            <p>Automate 1-click & multi-step Easy Apply applications</p>
+                        </div>
+                    </div>
+                    <div class="platform-status-row">
+                        <span>Authentication Status:</span>
+                        <span class="badge" id="linkedin-status-badge">Checking...</span>
+                    </div>
+                    <p class="platform-hint">Click below to open a browser window and log in once. Your secure session cookies will be stored locally for future automated applications.</p>
+                    <button class="btn btn-primary" id="btn-login-linkedin">Connect LinkedIn Session</button>
+                </div>
+
+                <!-- Naukri Connector -->
+                <div class="platform-card card-glass">
+                    <div class="platform-header">
+                        <div class="platform-badge-logo naukri-bg">N</div>
+                        <div>
+                            <h3>Naukri.com</h3>
+                            <p>Search & apply across premier Indian & global tech companies</p>
+                        </div>
+                    </div>
+                    <div class="platform-status-row">
+                        <span>Authentication Status:</span>
+                        <span class="badge" id="naukri-status-badge">Checking...</span>
+                    </div>
+                    <p class="platform-hint">Launch Naukri login window to authenticate. The agent maintains your active job seeker profile state.</p>
+                    <button class="btn btn-primary" id="btn-login-naukri">Connect Naukri Session</button>
+                </div>
+
+                <!-- Indeed Connector -->
+                <div class="platform-card card-glass">
+                    <div class="platform-header">
+                        <div class="platform-badge-logo indeed-bg">i</div>
+                        <div>
+                            <h3>Indeed Apply</h3>
+                            <p>Automate Easily Apply jobs and questionnaires on Indeed</p>
+                        </div>
+                    </div>
+                    <div class="platform-status-row">
+                        <span>Authentication Status:</span>
+                        <span class="badge" id="indeed-status-badge">Checking...</span>
+                    </div>
+                    <p class="platform-hint">Authenticate on Indeed once. The agent detects "Easily apply" postings and automatically submits applications.</p>
+                    <button class="btn btn-primary" id="btn-login-indeed">Connect Indeed Session</button>
+                </div>
+
+                <!-- Greenhouse & Lever Boards -->
+                <div class="platform-card card-glass">
+                    <div class="platform-header">
+                        <div class="platform-badge-logo gh-bg">GH</div>
+                        <div>
+                            <h3>Greenhouse & Lever</h3>
+                            <p>Direct career portals for modern tech startups & unicorns</p>
+                        </div>
+                    </div>
+                    <div class="platform-status-row">
+                        <span>Status:</span>
+                        <span class="badge badge-success">Ready (No Login Required)</span>
+                    </div>
+                    <p class="platform-hint">Applies directly to open postings on boards.greenhouse.io and jobs.lever.co with intelligent form autofill and resume attachment.</p>
+                    <button class="btn btn-secondary" id="btn-test-mock-greenhouse">Test on Demo Greenhouse Portal</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal: Proof Screenshot & Details -->
+    <div class="modal-backdrop" id="proof-modal" hidden>
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="modal-proof-title">Application Proof & Submission Record</h3>
+                <button class="modal-close-btn" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta-grid" id="modal-proof-meta"></div>
+                <div class="modal-screenshot-container">
+                    <h4>Evidence Screenshot</h4>
+                    <div id="modal-screenshot-wrap"></div>
+                </div>
+                <div class="modal-answers-wrap">
+                    <h4>Submitted Form Fields & Answers</h4>
+                    <pre id="modal-answers-json"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Import Custom URL -->
+    <div class="modal-backdrop" id="import-modal" hidden>
+        <div class="modal-dialog modal-dialog-sm">
+            <div class="modal-header">
+                <h3>Import Custom Job Posting</h3>
+                <button class="modal-close-btn" id="btn-close-import-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="import-form">
+                    <div class="form-group">
+                        <label>Company Name *</label>
+                        <input type="text" id="imp-company" placeholder="e.g. Airbnb" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Job Title *</label>
+                        <input type="text" id="imp-title" placeholder="e.g. Senior Full Stack Engineer" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Job URL *</label>
+                        <input type="url" id="imp-url" placeholder="https://boards.greenhouse.io/... or https://jobs.lever.co/..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>Platform / Type</label>
+                        <select id="imp-platform">
+                            <option value="greenhouse">Greenhouse</option>
+                            <option value="lever">Lever</option>
+                            <option value="linkedin">LinkedIn</option>
+                            <option value="naukri">Naukri</option>
+                            <option value="indeed">Indeed</option>
+                            <option value="generic">Other / Direct Portal</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block mt-16">Add to Application Queue</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

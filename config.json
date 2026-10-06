@@ -1,0 +1,55 @@
+{
+  "port": 3000,
+  "defaultDomain": "Full Stack Developer",
+  "minMatchScore": 75,
+  "executionMode": "full_auto",
+  "headless": false,
+  "maxApplicationsPerRun": 20,
+  "delayBetweenApplicationsMs": 4000,
+  "geminiApiKey": "",
+  "openaiApiKey": "",
+  "supportedPlatforms": [
+    "linkedin",
+    "naukri",
+    "indeed",
+    "greenhouse",
+    "lever",
+    "remote"
+  ],
+  "indeed": {
+    "enabled": true,
+    "easilyApplyOnly": true,
+    "searchLocation": "Remote",
+    "maxResults": 20
+  },
+  "emailNotifications": {
+    "enabled": false,
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "smtpUser": "",
+    "smtpPass": "",
+    "fromEmail": "jobagent@applypilot.local",
+    "recipientEmail": ""
+  },
+  "searchPreferences": {
+    "keywords": [
+      "Full Stack Developer",
+      "Software Engineer",
+      "Frontend Developer",
+      "Node.js Developer",
+      "React Developer"
+    ],
+    "experienceYears": 3,
+    "locations": [
+      "Remote",
+      "Bangalore",
+      "San Francisco",
+      "New York",
+      "Hybrid"
+    ],
+    "jobTypes": [
+      "Full-time",
+      "Contract"
+    ]
+  }
+}
